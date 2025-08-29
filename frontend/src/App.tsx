@@ -2,6 +2,7 @@ import './assets/css/App.css'
 import {Route, Routes} from "react-router-dom";
 import Header from "./Components/Header.tsx";
 import HomePage from "./Pages/HomePage.tsx";
+import UserPage from "./Pages/UserPage.tsx";
 
 function App() {
 
@@ -9,7 +10,8 @@ function App() {
         <>
           <Header/>
           <Routes>
-            <Route path={""} element={<HomePage/>}></Route>
+              <Route path={""} element={<HomePage/>}></Route>
+              <Route path={`/userPage`} element={<UserPage/>}></Route>
           </Routes>
 
         </>
