@@ -59,7 +59,6 @@ class JwtServiceTest {
         // given
         String username = "expiredUser";
 
-        // wir erzeugen ein Token mit Ablaufzeit "jetzt"
         JwtService shortLivedJwt = new JwtService() {
             @Override
             public String generateToken(String username) {
