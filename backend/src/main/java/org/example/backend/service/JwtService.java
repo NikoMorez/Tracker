@@ -13,13 +13,13 @@ import java.util.Date;
 public class JwtService {
 
     final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expirationMs = 24 * 60 * 60 * 1000;
 
     public String generateToken(String username) {
+        long expirationToken = 24 * 60 * 60 * 1000L;
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationToken))
                 .signWith(key)
                 .compact();
     }
