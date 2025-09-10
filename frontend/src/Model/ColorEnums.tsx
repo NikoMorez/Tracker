@@ -19,6 +19,7 @@ export const BackgroundColorLabels: Record<BackgroundColor, string> = {
 };
 
 
+
 export enum TextColor {
     WHITE = "#FFFFFF",
     BLACK = "#000000",
