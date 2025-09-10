@@ -1,17 +1,20 @@
 import React from "react";
-import { Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Divider, ListItemIcon } from "@mui/material";
+import { Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Divider, ListItemIcon, Link } from "@mui/material";
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 
+
 interface UserMenuProps {
     anchorEl: HTMLElement | null;
+    username : string
+    avatar : string
     open: boolean;
     handleClick: (event: React.MouseEvent<HTMLElement>) => void;
     handleClose: () => void;
     handleLogout: () => void;
 }
 
-const UserMenu: React.FC<UserMenuProps> = ({ anchorEl, open, handleClick, handleClose, handleLogout }) => {
+const UserMenu: React.FC<UserMenuProps> = ({username, avatar, anchorEl, open, handleClick, handleClose, handleLogout }) => {
     return (
         <>
             <Box sx={{ display: 'flex', alignItems: 'center', textAlign: 'center' }}>
@@ -24,7 +27,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ anchorEl, open, handleClick, handle
                         aria-haspopup="true"
                         aria-expanded={open ? 'true' : undefined}
                     >
-                        <Avatar sx={{ width: 32, height: 32 }} src="https://picsum.photos/seed/moi/150/200" />
+                        <div className={"text-blue-300 mr-2 font-semibold"}>{username}</div>
+                        <Avatar sx={{ width: 32, height: 32 }} src={avatar} />
                     </IconButton>
                 </Tooltip>
             </Box>
@@ -62,15 +66,15 @@ const UserMenu: React.FC<UserMenuProps> = ({ anchorEl, open, handleClick, handle
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
                 <MenuItem onClick={handleClose}>
+                    <Link href={"/userpage"}>
                     <Avatar /> Profile
-                </MenuItem>
-                <MenuItem onClick={handleClose}>
-                    <Avatar /> My page
+                    </Link>
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleClose}>
-                    <ListItemIcon><Settings fontSize="small" /></ListItemIcon>
+                    <Link href={"/user/settings"}><ListItemIcon><Settings fontSize="small" /></ListItemIcon>
                     Settings
+                    </Link>
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>
                     <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
