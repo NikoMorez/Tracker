@@ -1,3 +1,6 @@
+@import "tailwindcss";
+
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -29,5 +32,5 @@ h1 {
 }
 
 .backGroundHeader{
-  background-image: url("../images/headerBG.jpg");
+  background-image: url("../../images/headerBG.jpg");
 }

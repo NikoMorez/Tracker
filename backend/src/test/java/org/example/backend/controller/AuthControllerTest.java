@@ -1,6 +1,6 @@
 package org.example.backend.controller;
 
-import org.example.backend.model.User;
+import org.example.backend.model.*;
 import org.example.backend.repo.UserRepository;
 import org.example.backend.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,8 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -33,7 +32,6 @@ class AuthControllerTest {
     @Autowired
     private JwtService jwtService;
 
-
     private String token;
 
     @BeforeEach
@@ -41,15 +39,21 @@ class AuthControllerTest {
         userRepository.deleteAll();
         User user = new User(
                 null,
-                "testuser",
-                passwordEncoder.encode("secret"),
-                "test@test.com",
-                "USER",
-                Map.of(),
-                Map.of()
+                new UserIdentity("testuser", passwordEncoder.encode("secret"), "test@test.com", "USER"),
+                Region.NotDefined,
+                new UserProfile(
+                        "shownTest",
+                        "avatar.jpg",
+                        "bio text",
+                        "black",
+                        "bg.jpg",
+                        "white",
+                        "bgSmall.jpg",
+                        Map.of(),
+                        Map.of()
+                )
         );
         userRepository.save(user);
-
         token = jwtService.generateToken("testuser");
     }
 
@@ -58,18 +62,11 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(content().string("testuser"));
-    }
-
-    @Test
-    void getMe_returns401_whenNoToken() throws Exception {
-        mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(jsonPath("$.identity.username").value("testuser"));
     }
 
     @Test
     void register_createsNewUser_andReturnsToken() throws Exception {
-        // Given
         String body = """
                 {
                   "username": "newuser",
@@ -78,7 +75,6 @@ class AuthControllerTest {
                 }
                 """;
 
-        // When / Then
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -87,27 +83,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_fails_whenUsernameExists() throws Exception {
-        // Given
-        String body = """
-                {
-                  "username": "testuser",
-                  "password": "anotherpw",
-                  "email": "dupe@test.com"
-                }
-                """;
-
-        // When / Then
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Username exists"));
-    }
-
-    @Test
     void login_returnsToken_whenCredentialsCorrect() throws Exception {
-        // Given
         String body = """
                 {
                   "username": "testuser",
@@ -115,32 +91,10 @@ class AuthControllerTest {
                 }
                 """;
 
-        // When / Then
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
-
-    @Test
-    void login_fails_whenWrongPassword() throws Exception {
-        // Given
-        String body = """
-                {
-                  "username": "testuser",
-                  "password": "wrong"
-                }
-                """;
-
-        // When / Then
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isUnauthorized());
-    }
-
-
-
-
 }

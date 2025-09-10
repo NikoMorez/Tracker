@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+.stdButton{
+    @apply px-4 py-2 rounded
+}
+
+.stdButton.stdColor{
+    @apply text-white bg-stone-800 hover:bg-stone-900
+}
+
+.cardsTextColor{
+    @apply dark:text-stone-300 text-zinc-800
+}
+
+.cardsBackGroundColor{
+    @apply dark:bg-stone-700 bg-gray-400
+}
+
+.cardsShadowBorder{
+    @apply shadow-lg rounded-2xl border dark:border-stone-900  shadow-stone-900
+}
+
+.cardsHover{
+    @apply hover:shadow-2xl hover:scale-105
+}
+
+.bg-opacity-50 {
+    --tw-bg-opacity: 0.5;
+}

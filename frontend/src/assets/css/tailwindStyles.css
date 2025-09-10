@@ -1,9 +1,0 @@
-@import "tailwindcss";
-
-.stdButton{
-    @apply px-4 py-2 rounded
-}
-
-.stdButton.stdColor{
-    @apply text-white bg-stone-800 hover:bg-stone-900
-}
