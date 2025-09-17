@@ -11,11 +11,12 @@ public class SteamService {
     private final RestClient restClient;
     private final String apiKey;
 
-    public SteamService(@Value("${steam.api-key}") String apiKey) {
-        this.apiKey = apiKey;
-        this.restClient = RestClient.builder()
+    public SteamService(RestClient.Builder restClientBuilder, @Value("${steam.api-key}") String apiKey) {
+
+        this.restClient = restClientBuilder
                 .baseUrl("https://api.steampowered.com")
                 .build();
+        this.apiKey = apiKey;
     }
 
     public PlayerSummaryResponse.Player getProfile(String steamId) {
