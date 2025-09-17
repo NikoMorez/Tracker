@@ -82,7 +82,7 @@ export function SortableItem({game, toggleVisible, handleFeatureChange, handleFa
 
                     <div className="flex items-center space-x-2 bg-gray-500 rounded-lg p-2">
                         <button onClick={() => handleFavorite(game.gameId, "game")}>
-                            {favoriteItem?.id === game.gameId ? "Favorit" : "Favorit"}
+                            {favoriteItem?.id === game.gameId ? "Favorit" : "Kein Favorit"}
                         </button>
                     </div>
                 </div>
