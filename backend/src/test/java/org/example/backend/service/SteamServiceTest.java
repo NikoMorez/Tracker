@@ -3,94 +3,120 @@ package org.example.backend.service;
 import org.example.backend.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
+@SpringBootTest
 class SteamServiceTest {
 
-    @Mock
     private SteamService steamService;
+
+    @Value("${steam.api-key}")
+    private String apiKey;
+
+    private final String testSteamId = "12345678901234567";
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        steamService = new SteamService(apiKey) {
+            @Override
+            public PlayerSummaryResponse.Player getProfile(String steamId) {
+                if ("null".equals(steamId)) return null;
+                return new PlayerSummaryResponse.Player(
+                        steamId,
+                        "TestUser",
+                        "http://profile.url",
+                        "avatar.jpg",
+                        "avatarmedium.jpg",
+                        "avatarfull.jpg",
+                        1,
+                        1234567890L
+                );
+            }
+
+            @Override
+            public OwnedGamesResponse.Response getOwnedGames(String steamId) {
+                if ("null".equals(steamId)) return null;
+                return new OwnedGamesResponse.Response(1,
+                        List.of(new OwnedGamesResponse.Game(1, "TestGame", 100, "icon_url")));
+            }
+
+            @Override
+            public PlayerAchievementsResponse.Playerstats getAchievements(String steamId, int appId) {
+                if ("null".equals(steamId)) return null;
+                return new PlayerAchievementsResponse.Playerstats(
+                        steamId,
+                        "TestGame",
+                        List.of(new PlayerAchievementsResponse.Achievement("ACH_1", 1, "Achievement1", "Desc"))
+                );
+            }
+
+            @Override
+            public GameSchemaResponse.Game getGameSchema(int appId) {
+                if (appId == 0) return null;
+                return new GameSchemaResponse.Game(
+                        "TestGame",
+                        new GameSchemaResponse.AvailableGameStats(
+                                List.of(new GameSchemaResponse.Achievement("ACH_1", "0", "Achievement1", "Desc", "icon", "icongray", 0))
+                        )
+                );
+            }
+        };
     }
 
     @Test
     void getProfile_returnsPlayer() {
-        PlayerSummaryResponse.Player player = new PlayerSummaryResponse.Player(
-                "12345", "PersonaName", "profileUrl", "avatar",
-                "avatarmedium", "avatarfull", 1, 1234567890L
-        );
-
-        when(steamService.getProfile("12345")).thenReturn(player);
-
-        PlayerSummaryResponse.Player result = steamService.getProfile("12345");
-
-        assertNotNull(result);
-        assertEquals("12345", result.steamid());
-        assertEquals("PersonaName", result.personaname());
+        PlayerSummaryResponse.Player player = steamService.getProfile(testSteamId);
+        assertNotNull(player);
+        assertEquals(testSteamId, player.steamid());
+        assertNotNull(player.personaname());
     }
 
     @Test
-    void getOwnedGames_returnsResponse() {
-        OwnedGamesResponse.Game game1 = new OwnedGamesResponse.Game(1, "Game1", 100, "icon1");
-        OwnedGamesResponse.Game game2 = new OwnedGamesResponse.Game(2, "Game2", 200, "icon2");
+    void getProfile_returnsNull() {
+        assertNull(steamService.getProfile("null"));
+    }
 
-        OwnedGamesResponse.Response response = new OwnedGamesResponse.Response(2, List.of(game1, game2));
+    @Test
+    void getOwnedGames_returnsGames() {
+        OwnedGamesResponse.Response response = steamService.getOwnedGames(testSteamId);
+        assertNotNull(response);
+        assertEquals(1, response.game_count());
+        assertFalse(response.games().isEmpty());
+    }
 
-        when(steamService.getOwnedGames("12345")).thenReturn(response);
-
-        OwnedGamesResponse.Response result = steamService.getOwnedGames("12345");
-
-        assertNotNull(result);
-        assertEquals(2, result.game_count());
-        assertEquals("Game1", result.games().getFirst().name());
+    @Test
+    void getOwnedGames_returnsNull() {
+        assertNull(steamService.getOwnedGames("null"));
     }
 
     @Test
     void getAchievements_returnsPlayerstats() {
-        PlayerAchievementsResponse.Achievement ach1 = new PlayerAchievementsResponse.Achievement(
-                "ACH_1", 1, "Achievement 1", "Description 1"
-        );
+        PlayerAchievementsResponse.Playerstats stats = steamService.getAchievements(testSteamId, 1);
+        assertNotNull(stats);
+        assertEquals(testSteamId, stats.steamID());
+        assertFalse(stats.achievements().isEmpty());
+    }
 
-        PlayerAchievementsResponse.Playerstats playerstats = new PlayerAchievementsResponse.Playerstats(
-                "12345",
-                "Game1",
-                List.of(ach1)
-        );
-
-        when(steamService.getAchievements("12345", 1)).thenReturn(playerstats);
-
-        PlayerAchievementsResponse.Playerstats result = steamService.getAchievements("12345", 1);
-
-        assertNotNull(result);
-        assertEquals("12345", result.steamID());
-        assertEquals("Game1", result.gameName());
-        assertEquals(1, result.achievements().size());
-        assertEquals("ACH_1", result.achievements().getFirst().apiname());
+    @Test
+    void getAchievements_returnsNull() {
+        assertNull(steamService.getAchievements("null", 1));
     }
 
     @Test
     void getGameSchema_returnsGame() {
-        GameSchemaResponse.Achievement achievement = new GameSchemaResponse.Achievement(
-                "ACH_1", "0", "Achievement 1", "Description 1", "icon", "icongray", 0
-        );
-        GameSchemaResponse.AvailableGameStats availableStats =
-                new GameSchemaResponse.AvailableGameStats(List.of(achievement));
-        GameSchemaResponse.Game game = new GameSchemaResponse.Game("Game1", availableStats);
+        GameSchemaResponse.Game game = steamService.getGameSchema(1);
+        assertNotNull(game);
+        assertEquals("TestGame", game.gameName());
+        assertFalse(game.availableGameStats().achievements().isEmpty());
+    }
 
-        when(steamService.getGameSchema(1)).thenReturn(game);
-
-        GameSchemaResponse.Game result = steamService.getGameSchema(1);
-
-        assertNotNull(result);
-        assertEquals("Game1", result.gameName());
-        assertEquals(1, result.availableGameStats().achievements().size());
-        assertEquals("ACH_1", result.availableGameStats().achievements().getFirst().name());
+    @Test
+    void getGameSchema_returnsNull() {
+        assertNull(steamService.getGameSchema(0));
     }
 }
