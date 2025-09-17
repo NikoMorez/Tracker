@@ -59,7 +59,7 @@ class SteamApiControllerTest {
         OwnedGamesResponse.Response result = steamApiController.getOwnedGames("12345");
 
         assertEquals(2, result.game_count());
-        assertEquals("Game1", result.games().getFirst()).name());
+        assertEquals("Game1", result.games().getFirst().name());
     }
 
     @Test
