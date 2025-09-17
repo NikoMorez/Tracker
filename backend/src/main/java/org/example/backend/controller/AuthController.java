@@ -1,9 +1,6 @@
 package org.example.backend.controller;
 
-import org.example.backend.model.Region;
-import org.example.backend.model.User;
-import org.example.backend.model.UserIdentity;
-import org.example.backend.model.UserProfile;
+import org.example.backend.model.*;
 import org.example.backend.repo.UserRepository;
 import org.example.backend.service.JwtService;
 import org.springframework.http.HttpStatus;
@@ -11,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 @RestController
@@ -55,7 +53,7 @@ public class AuthController {
         var newUser = new User(
                 null,
                 new UserIdentity(username, passwordEncoder.encode(password), email, "USER"),
-                Region.NotDefined,
+                Region.NOTDEFINED,
                 new UserProfile(
                         username,
                         "",
@@ -65,7 +63,9 @@ public class AuthController {
                         "",
                         "",
                         Map.of(),
-                        Map.of()
+                        new ArrayList<>(),
+                        new FavoriteItem("","","")
+
                 )
         );
 

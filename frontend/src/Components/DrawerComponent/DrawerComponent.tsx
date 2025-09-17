@@ -14,7 +14,7 @@ import { useState } from "react";
 import {
     AccountLinksPage,
     AccountSettingsPage,
-    AvatarPage, GerneralPage, MiniProfilePage,
+    AvatarPage, GerneralPage, MiniProfilePage, PageConfigPage,
     ProfileBackgroundPage,
 } from "./DrawerPages.tsx";
 import type {User} from "../../Model/User.tsx";
@@ -36,6 +36,7 @@ export default function DrawerComponent({User, onUpdate} : drawerProps) {
         "ProfileBackground": <ProfileBackgroundPage User={User} onUpdate={onUpdate}/>,
         "MiniProfile": <MiniProfilePage User={User} onUpdate={onUpdate}/>,
         "Account Links": <AccountLinksPage User={User} onUpdate={onUpdate}/>,
+        "Page Config": <PageConfigPage User={User} onUpdate={onUpdate}/>,
         "Account Settings": <AccountSettingsPage User={User} onUpdate={onUpdate}/>,
     };
 
@@ -48,9 +49,11 @@ export default function DrawerComponent({User, onUpdate} : drawerProps) {
 
             <Divider />
             <List>
-                {["Allgemein", "Avatar","ProfileBackground", "MiniProfile", "Account Links", "Account Settings"].map((text) => (
+                {["Allgemein", "Avatar","ProfileBackground", "MiniProfile", "Account Links","Page Config", "Account Settings"].map((text) => (
                     <ListItem key={text} disablePadding>
                         <ListItemButton
+                            id={text}
+                            onFocus={() => setSelectedPage(text)}
                             onClick={() => setSelectedPage(text)}
                             selected={selectedPage === text}
                         >

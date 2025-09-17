@@ -5,8 +5,7 @@ import org.example.backend.repo.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -28,7 +27,7 @@ public class UserService {
         User newUser = new User(
                 null,
                 new UserIdentity(username, passwordEncoder.encode(password), email, "USER"),
-                Region.NotDefined,
+                Region.NOTDEFINED,
                 new UserProfile(
                         username,
                         "",
@@ -38,7 +37,8 @@ public class UserService {
                         "#000000",
                         "",
                         Map.of(),
-                        Map.of()
+                        new ArrayList<>(),
+                       new FavoriteItem("","","")
                 )
         );
 
@@ -46,9 +46,42 @@ public class UserService {
     }
 
 
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByIdentityUsername(username);
+    public User linkSteamAccount(String userId, String steamId, String oauthToken, String refreshToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Map<String, ServiceData> services = new HashMap<>(user.userProfile().serviceNames());
+        services.put("Steam", new ServiceData(
+                "https://steamcommunity.com/profiles/" + steamId,
+                true,
+                services.size(),
+                steamId,
+                oauthToken,
+                refreshToken
+        ));
+
+        User updated = new User(
+                user.id(),
+                user.identity(),
+                user.region(),
+                new UserProfile(
+                        user.userProfile().shownUsername(),
+                        user.userProfile().avatar(),
+                        user.userProfile().bio(),
+                        user.userProfile().textColor(),
+                        user.userProfile().backgroundImage(),
+                        user.userProfile().textColorSmall(),
+                        user.userProfile().backgroundImageSmall(),
+                        services,
+                        user.userProfile().pageConfig(),
+                        user.userProfile().favoriteItem()
+                )
+        );
+
+        return userRepository.save(updated);
     }
+
+
 
 
     public User updateServiceNames(String userId, Map<String, ServiceData> serviceNames) {
@@ -68,7 +101,8 @@ public class UserService {
                         user.userProfile().textColorSmall(),
                         user.userProfile().backgroundImageSmall(),
                         serviceNames,
-                        user.userProfile().pageConfig()
+                        user.userProfile().pageConfig(),
+                        user.userProfile().favoriteItem()
                 )
         );
 
@@ -77,7 +111,7 @@ public class UserService {
 
 
 
-    public User updatePageConfig(String userId, Map<String, Map<String, String>> pageConfig) {
+    public User updatePageConfig(String userId, ArrayList<GameConfig> pageConfig) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -94,7 +128,8 @@ public class UserService {
                         user.userProfile().textColorSmall(),
                         user.userProfile().backgroundImageSmall(),
                         user.userProfile().serviceNames(),
-                        pageConfig
+                        pageConfig,
+                        user.userProfile().favoriteItem()
                 )
         );
 

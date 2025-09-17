@@ -13,22 +13,26 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Autowired
     private JwtService jwtService;
 
@@ -37,10 +41,11 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
-        User user = new User(
+
+        User testUser = new User(
                 null,
                 new UserIdentity("testuser", passwordEncoder.encode("secret"), "test@test.com", "USER"),
-                Region.NotDefined,
+                Region.NOTDEFINED,
                 new UserProfile(
                         "shownTest",
                         "avatar.jpg",
@@ -50,19 +55,44 @@ class AuthControllerTest {
                         "white",
                         "bgSmall.jpg",
                         Map.of(),
-                        Map.of()
+                        new ArrayList<>(),
+                        new FavoriteItem("", "", "")
                 )
         );
-        userRepository.save(user);
-        token = jwtService.generateToken("testuser");
+
+        testUser = userRepository.save(testUser);
+        token = jwtService.generateToken(testUser.identity().username());
     }
 
     @Test
-    void getMe_returnsAppUserFromDb() throws Exception {
-        mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer " + token))
+    void login_returnsToken_whenCredentialsCorrect() throws Exception {
+        String body = """
+                {
+                  "username": "testuser",
+                  "password": "secret"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.identity.username").value("testuser"));
+                .andExpect(jsonPath("$.token").exists());
+    }
+
+    @Test
+    void login_returnsUnauthorized_whenCredentialsIncorrect() throws Exception {
+        String body = """
+                {
+                  "username": "testuser",
+                  "password": "wrongpassword"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -83,18 +113,41 @@ class AuthControllerTest {
     }
 
     @Test
-    void login_returnsToken_whenCredentialsCorrect() throws Exception {
+    void register_returnsBadRequest_whenUsernameExists() throws Exception {
         String body = """
                 {
                   "username": "testuser",
-                  "password": "secret"
+                  "password": "secret",
+                  "email": "test@test.com"
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Username exists"));
+    }
+
+    @Test
+    void getMe_returnsAppUserFromDb() throws Exception {
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists());
+                .andExpect(jsonPath("$.identity.username").value("testuser"))
+                .andExpect(jsonPath("$.identity.email").value("test@test.com"));
+    }
+
+    @Test
+    void getMe_returnsUnauthorized_whenNoToken() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getMe_returnsUnauthorized_whenInvalidToken() throws Exception {
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer invalidtoken"))
+                .andExpect(status().isUnauthorized());
     }
 }
