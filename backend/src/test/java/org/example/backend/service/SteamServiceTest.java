@@ -3,17 +3,24 @@ package org.example.backend.service;
 import org.example.backend.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 class SteamServiceTest {
 
     private SteamService steamService;
+
+    @Mock
+    private RestClient restClient;
 
     @Value("${steam.api-key}")
     private String apiKey;
@@ -22,11 +29,18 @@ class SteamServiceTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+
+        RestClient.RequestHeadersUriSpec<?> uriSpecMock = mock(RestClient.RequestHeadersUriSpec.class);
+        RestClient.RequestHeadersSpec<?> headersSpecMock = mock(RestClient.RequestHeadersSpec.class);
+        RestClient.ResponseSpec responseSpecMock = mock(RestClient.ResponseSpec.class);
+
         steamService = new SteamService(apiKey) {
             @Override
             public PlayerSummaryResponse.Player getProfile(String steamId) {
-                if ("null".equals(steamId)) return null;
-                return new PlayerSummaryResponse.Player(
+
+                PlayerSummaryResponse.Player player = new PlayerSummaryResponse.Player(
                         steamId,
                         "TestUser",
                         "http://profile.url",
@@ -36,18 +50,19 @@ class SteamServiceTest {
                         1,
                         1234567890L
                 );
+                return player;
             }
 
             @Override
             public OwnedGamesResponse.Response getOwnedGames(String steamId) {
-                if ("null".equals(steamId)) return null;
-                return new OwnedGamesResponse.Response(1,
-                        List.of(new OwnedGamesResponse.Game(1, "TestGame", 100, "icon_url")));
+                return new OwnedGamesResponse.Response(
+                        1,
+                        List.of(new OwnedGamesResponse.Game(1, "TestGame", 100, "icon_url"))
+                );
             }
 
             @Override
             public PlayerAchievementsResponse.Playerstats getAchievements(String steamId, int appId) {
-                if ("null".equals(steamId)) return null;
                 return new PlayerAchievementsResponse.Playerstats(
                         steamId,
                         "TestGame",
@@ -57,16 +72,19 @@ class SteamServiceTest {
 
             @Override
             public GameSchemaResponse.Game getGameSchema(int appId) {
-                if (appId == 0) return null;
                 return new GameSchemaResponse.Game(
                         "TestGame",
                         new GameSchemaResponse.AvailableGameStats(
-                                List.of(new GameSchemaResponse.Achievement("ACH_1", "0", "Achievement1", "Desc", "icon", "icongray", 0))
+                                List.of(new GameSchemaResponse.Achievement(
+                                        "ACH_1", "0", "Achievement1", "Desc", "icon", "icongray", 0
+                                ))
                         )
                 );
             }
         };
     }
+
+
 
     @Test
     void getProfile_returnsPlayer() {
@@ -77,8 +95,14 @@ class SteamServiceTest {
     }
 
     @Test
-    void getProfile_returnsNull() {
-        assertNull(steamService.getProfile("null"));
+    void getProfile_returnsNullWhenNoPlayers() {
+        SteamService emptyService = new SteamService(apiKey) {
+            @Override
+            public PlayerSummaryResponse.Player getProfile(String steamId) {
+                return null;
+            }
+        };
+        assertNull(emptyService.getProfile(testSteamId));
     }
 
     @Test
@@ -90,8 +114,14 @@ class SteamServiceTest {
     }
 
     @Test
-    void getOwnedGames_returnsNull() {
-        assertNull(steamService.getOwnedGames("null"));
+    void getOwnedGames_returnsNullWhenNoResponse() {
+        SteamService emptyService = new SteamService(apiKey) {
+            @Override
+            public OwnedGamesResponse.Response getOwnedGames(String steamId) {
+                return null;
+            }
+        };
+        assertNull(emptyService.getOwnedGames(testSteamId));
     }
 
     @Test
@@ -103,8 +133,14 @@ class SteamServiceTest {
     }
 
     @Test
-    void getAchievements_returnsNull() {
-        assertNull(steamService.getAchievements("null", 1));
+    void getAchievements_returnsNullWhenNoPlayerstats() {
+        SteamService emptyService = new SteamService(apiKey) {
+            @Override
+            public PlayerAchievementsResponse.Playerstats getAchievements(String steamId, int appId) {
+                return null;
+            }
+        };
+        assertNull(emptyService.getAchievements(testSteamId, 1));
     }
 
     @Test
@@ -116,7 +152,13 @@ class SteamServiceTest {
     }
 
     @Test
-    void getGameSchema_returnsNull() {
-        assertNull(steamService.getGameSchema(0));
+    void getGameSchema_returnsNullWhenNoGame() {
+        SteamService emptyService = new SteamService(apiKey) {
+            @Override
+            public GameSchemaResponse.Game getGameSchema(int appId) {
+                return null;
+            }
+        };
+        assertNull(emptyService.getGameSchema(1));
     }
 }
