@@ -17,7 +17,6 @@ import { rankingSupportedGames } from "../../../config/gameFeatures.ts";
 import type { FavoriteItem, GameConfig, User } from "../../../Model/User.tsx";
 import { useSnackbar } from "../../snackBar/useSnackbar.ts";
 
-
 type pageProps = {
     User: User;
     onUpdate: () => void;
@@ -43,6 +42,30 @@ export function PageConfig({ User, onUpdate }: pageProps) {
     const sensors = useSensors(useSensor(PointerSensor));
 
 
+    const applyGamesUpdate = (
+        updatedGames: GameConfig[],
+        favoriteItem?: FavoriteItem
+    ) => {
+        setGames(updatedGames);
+        setFormData(prev => ({
+            ...prev,
+            userProfile: {
+                ...prev.userProfile,
+                pageConfig: Object.fromEntries(updatedGames.map(g => [g.gameId, g])),
+                favoriteItem: favoriteItem ?? prev.userProfile.favoriteItem,
+            },
+        }));
+        setIsDirty(true);
+    };
+
+    const toggleFeature = (
+        features: Array<"achievements" | "ranking">,
+        feature: "achievements" | "ranking"
+    ): Array<"achievements" | "ranking"> =>
+        features.includes(feature)
+            ? features.filter(f => f !== feature)
+            : [...features, feature];
+
     useEffect(() => {
         setGames(initialGames);
         setFormData(User);
@@ -53,36 +76,13 @@ export function PageConfig({ User, onUpdate }: pageProps) {
         const updatedGames = games.map(g =>
             g.gameId === gameId ? { ...g, visible: !g.visible } : g
         );
-        setGames(updatedGames);
-
-
-        setFormData(prev => ({
-            ...prev,
-            userProfile: {
-                ...prev.userProfile,
-                pageConfig: Object.fromEntries(updatedGames.map(g => [g.gameId, g])),
-                favoriteItem: prev.userProfile.favoriteItem,
-            },
-        }));
-
-        setIsDirty(true);
+        applyGamesUpdate(updatedGames);
     };
 
     const removeGame = (gameId: string) => {
         const updatedGames = games.filter(g => g.gameId !== gameId);
-        setGames(updatedGames);
-        setFormData(prev => ({
-            ...prev,
-            userProfile: {
-                ...prev.userProfile,
-                pageConfig: Object.fromEntries(updatedGames.map(g => [g.gameId, g])),
-                favoriteItem: prev.userProfile.favoriteItem,
-            },
-        }));
-        setIsDirty(true);
+        applyGamesUpdate(updatedGames);
     };
-
-
 
     useEffect(() => {
         const fetchSteamGames = async () => {
@@ -92,6 +92,7 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                 const response = await axios.get(`/api/steam/games/${steamId}`);
                 const data = response.data;
                 const list = data.games ?? data.response?.games ?? [];
+
                 const mapped: GameConfig[] = list.map((g: any, index: number) => ({
                     serviceName: "steam",
                     gameId: g.appid.toString(),
@@ -100,8 +101,9 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                     visible: true,
                     order: games.length + index,
                     playtime: g.playtime_forever ?? 0,
-                    features: ["achievements"] as Array<"achievements" | "ranking">,
+                    features: ["achievements"],
                 }));
+
                 setAvailableGames(mapped);
             } catch (error) {
                 console.error("Fehler beim Laden der Steam-Spiele:", error);
@@ -110,7 +112,7 @@ export function PageConfig({ User, onUpdate }: pageProps) {
         fetchSteamGames();
     }, [formData.userProfile.serviceNames?.Steam?.externalId]);
 
-    const filteredGames = availableGames.filter((g) =>
+    const filteredGames = availableGames.filter(g =>
         g.gameName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -118,83 +120,43 @@ export function PageConfig({ User, onUpdate }: pageProps) {
 
     const addSelectedGames = () => {
         const newGames = availableGames
-            .filter((g) => selectedGames.has(g.gameId))
-            .map((g) => ({
+            .filter(g => selectedGames.has(g.gameId))
+            .map(g => ({
                 ...g,
                 features: selectedGames.get(g.gameId) || [],
             }));
-        const updatedGames = [...games, ...newGames];
-        setGames(updatedGames);
-        setFormData((prev) => ({
-            ...prev,
-            userProfile: {
-                ...prev.userProfile,
-                pageConfig: Object.fromEntries(updatedGames.map((g) => [g.gameId, g])),
-            },
-        }));
+
+        applyGamesUpdate([...games, ...newGames]);
         setSelectedGames(new Map());
         setShowWizard(false);
-        setIsDirty(true);
     };
 
-    const handleFeatureChange = (
-        gameId: string,
-        feature: "achievements" | "ranking"
-    ) => {
-        const updatedGames = games.map((g) => {
+    const handleFeatureChange = (gameId: string, feature: "achievements" | "ranking") => {
+        const updatedGames = games.map(g => {
             if (g.gameId === gameId) {
                 if (feature === "ranking" && !rankingSupportedGames[g.serviceName]?.includes(g.gameId)) return g;
-                const newFeatures = g.features.includes(feature)
-                    ? g.features.filter((f) => f !== feature)
-                    : [...g.features, feature];
-                return { ...g, features: newFeatures };
+                return { ...g, features: toggleFeature(g.features, feature) };
             }
             return g;
         });
-        setGames(updatedGames);
-        setFormData((prev) => ({
-            ...prev,
-            userProfile: {
-                ...prev.userProfile,
-                pageConfig: Object.fromEntries(updatedGames.map((g) => [g.gameId, g])),
-            },
-        }));
-        setIsDirty(true);
+        applyGamesUpdate(updatedGames);
     };
 
-    const handleFavorite = (
-        gameId: string,
-        type: "game" | "achievement" | "ranking"
-    ) => {
+    const handleFavorite = (gameId: string, type: "game" | "achievement" | "ranking") => {
         const fav: FavoriteItem = { type, id: gameId, serviceName: "steam" };
-        setFormData((prev) => ({
-            ...prev,
-            userProfile: {
-                ...prev.userProfile,
-                favoriteItem: fav,
-            },
-        }));
-        setIsDirty(true);
+        applyGamesUpdate(games, fav);
     };
 
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
         if (!over) return;
-        const oldIndex = games.findIndex((g) => g.gameId === active.id);
-        const newIndex = games.findIndex((g) => g.gameId === over.id);
+        const oldIndex = games.findIndex(g => g.gameId === active.id);
+        const newIndex = games.findIndex(g => g.gameId === over.id);
         const newOrder = arrayMove(games, oldIndex, newIndex).map((g, idx) => ({
             ...g,
             order: idx,
         }));
-        setGames(newOrder);
-        setFormData((prev) => ({
-            ...prev,
-            userProfile: {
-                ...prev.userProfile,
-                pageConfig: Object.fromEntries(newOrder.map((g) => [g.gameId, g])),
-            },
-        }));
-        setIsDirty(true);
+        applyGamesUpdate(newOrder);
     };
 
     const handleSave = async () => {
@@ -207,10 +169,14 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                     favoriteItem: formData.userProfile.favoriteItem,
                 },
             });
-            onUpdate()
+            onUpdate();
             showSnackbar("Änderungen erfolgreich gespeichert!", "success");
         } catch (err: any) {
-            showSnackbar("Fehler beim Speichern: " + (err.response?.data?.message || err.message), "error");
+            showSnackbar(
+                "Fehler beim Speichern: " +
+                (err.response?.data?.message || err.message),
+                "error"
+            );
         }
     };
 
@@ -224,11 +190,14 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                     >
                         Spiel hinzufügen
                     </button>
-
                 </div>
 
                 <button
-                    className={`px-4 py-2 rounded ${isDirty ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-800 cursor-not-allowed"}`}
+                    className={`px-4 py-2 rounded ${
+                        isDirty
+                            ? "bg-green-500 text-white hover:bg-green-600"
+                            : "bg-gray-300 text-gray-800 cursor-not-allowed"
+                    }`}
                     onClick={handleSave}
                     disabled={!isDirty}
                 >
@@ -242,11 +211,11 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                 onDragEnd={handleDragEnd}
             >
                 <SortableContext
-                    items={games.map((g) => g.gameId)}
+                    items={games.map(g => g.gameId)}
                     strategy={verticalListSortingStrategy}
                 >
                     <ul>
-                        {games.map((game) => (
+                        {games.map(game => (
                             <SortableItem
                                 key={game.gameId}
                                 game={game}
@@ -261,31 +230,27 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                 </SortableContext>
             </DndContext>
 
-
             {showWizard && (
-                <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4 z-1250 text-blue-500">
+                <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4 text-blue-500">
                     <div className="bg-white w-full max-w-4xl h-[80vh] rounded shadow-lg flex flex-col">
-
                         <div className="p-4 border-b flex justify-between items-center">
                             <h2 className="text-xl font-bold">Spiele auswählen</h2>
                             <button className="text-red-500" onClick={() => setShowWizard(false)}>✕</button>
                         </div>
-
 
                         <div className="p-4 border-b">
                             <input
                                 type="text"
                                 placeholder="Spiel suchen..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full p-2 border rounded"
                             />
                         </div>
 
-
                         <div className="flex-1 overflow-y-auto p-4">
                             <ul>
-                                {filteredGames.map((g) => (
+                                {filteredGames.map(g => (
                                     <li key={g.gameId} className="flex items-center p-2 border-b hover:bg-gray-100">
                                         <input
                                             type="checkbox"
@@ -293,7 +258,7 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                                             onChange={() => {
                                                 const copy = new Map(selectedGames);
                                                 if (copy.has(g.gameId)) copy.delete(g.gameId);
-                                                else copy.set(g.gameId, ["achievements"] as Array<"achievements" | "ranking">);
+                                                else copy.set(g.gameId, ["achievements"]);
                                                 setSelectedGames(copy);
                                             }}
                                             className="mr-2"
@@ -310,17 +275,12 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                                                         onChange={() => {
                                                             const copy = new Map(selectedGames);
                                                             const features = copy.get(g.gameId) || [];
-                                                            if (features.includes("achievements")) {
-                                                                copy.set(g.gameId, features.filter((f) => f !== "achievements"));
-                                                            } else {
-                                                                copy.set(g.gameId, [...features, "achievements"]);
-                                                            }
+                                                            copy.set(g.gameId, toggleFeature(features, "achievements"));
                                                             setSelectedGames(copy);
                                                         }}
                                                     />
                                                     <span>Achievements</span>
                                                 </label>
-
 
                                                 {rankingSupportedGames[g.serviceName]?.includes(g.gameId) && (
                                                     <label className="flex items-center space-x-1">
@@ -330,11 +290,7 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                                                             onChange={() => {
                                                                 const copy = new Map(selectedGames);
                                                                 const features = copy.get(g.gameId) || [];
-                                                                if (features.includes("ranking")) {
-                                                                    copy.set(g.gameId, features.filter((f) => f !== "ranking"));
-                                                                } else {
-                                                                    copy.set(g.gameId, [...features, "ranking"]);
-                                                                }
+                                                                copy.set(g.gameId, toggleFeature(features, "ranking"));
                                                                 setSelectedGames(copy);
                                                             }}
                                                         />
@@ -348,7 +304,6 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                             </ul>
                         </div>
 
-
                         <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
                             <button
                                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -358,9 +313,7 @@ export function PageConfig({ User, onUpdate }: pageProps) {
                             </button>
                             <button
                                 className="ml-2 px-4 py-2 bg-gray-200 rounded"
-                                onClick={() => {
-                                    setShowWizard(false);
-                                }}
+                                onClick={() => setShowWizard(false)}
                             >
                                 Abbrechen
                             </button>
