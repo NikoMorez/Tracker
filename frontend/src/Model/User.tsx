@@ -27,20 +27,41 @@ export interface UserProfile {
     backgroundImageSmall?: string;
 
     serviceNames: Record<string, ServiceData>;
-    pageConfig: Record<string, Record<string, string>>;
+    pageConfig: Record<string, GameConfig>;
+    favoriteItem?: FavoriteItem;
 }
 
 export enum Region {
-    NotDefined = "",
-    Europe = "EUROPE",
+    NOTDEFINED = "",
+    EUROPE = "EUROPE",
     USA = "USA",
-    Asia = "ASIA",
-    Africa = "AFRICA",
-    Australia = "AUSTRALIA"
+    ASIA = "ASIA",
+    AFRICA = "AFRICA",
+    AUSTRALIA = "AUSTRALIA"
 }
 
 export interface ServiceData {
     url: string;
     visible: boolean;
     order: number;
+    externalId: string;
+    oauthToken : string;
+    refreshToken : string;
+}
+
+export type FavoriteItem = {
+    type: "game" | "achievement" | "ranking";
+    id: string;
+    serviceName: string;
+};
+
+export interface GameConfig {
+    serviceName: string;
+    gameId: string;
+    gameName: string;
+    iconUrl?: string;
+    visible: boolean;
+    order: number;
+    playtime: number;
+    features: Array<"achievements" | "ranking">;
 }

@@ -2,7 +2,7 @@ package org.example.backend.model;
 
 
 public enum Region {
-    NotDefined,
+    NOTDEFINED,
     EUROPE,
     USA,
     ASIA,

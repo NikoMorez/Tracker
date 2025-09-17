@@ -12,10 +12,6 @@ type pageProps = {
     onUpdate : () => void
 }
 
-
-
-
-
 type Service = {
     name: string;
     url : string;
@@ -34,6 +30,7 @@ export function AccountLinks({ User, onUpdate }: pageProps) {
             url : data.url,
             visible: data.visible,
             order: data.order ?? i,
+            externalId: data.externalId,
             authenticated: true
         }))
     );
@@ -42,6 +39,14 @@ export function AccountLinks({ User, onUpdate }: pageProps) {
 
 
     const connectWithService = async (serviceName: string) => {
+
+        console.log(serviceName);
+        if (serviceName === "Steam") {
+            window.location.href = `/api/oauth/steam/login?userId=${User.id}`;
+            return;
+        }
+
+
         const newService: Service = {
             name: serviceName,
             url : "https://"+serviceName+".com",
@@ -49,6 +54,8 @@ export function AccountLinks({ User, onUpdate }: pageProps) {
             order: services.length,
             authenticated: true
         };
+
+
         setServices(prev => [...prev, newService]);
         setIsDirty(true);
     };

@@ -66,7 +66,8 @@ public class ApiController {
                                     updatedUser.userProfile().textColorSmall(),
                                     updatedUser.userProfile().backgroundImageSmall(),
                                     updatedUser.userProfile().serviceNames(),
-                                    updatedUser.userProfile().pageConfig()
+                                    updatedUser.userProfile().pageConfig(),
+                                    updatedUser.userProfile().favoriteItem()
                             )
                     );
                     userRepository.save(user);

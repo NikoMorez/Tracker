@@ -28,8 +28,12 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        
-        if (path.startsWith("/api/auth") || path.startsWith("/api/users") || path.startsWith("/api/user/")) {
+
+        if (path.startsWith("/api/auth")
+                || path.startsWith("/api/users")
+                || path.startsWith("/api/oauth/steam")
+                || path.startsWith("/api/steam/")) {
+
             filterChain.doFilter(request, response);
             return;
         }

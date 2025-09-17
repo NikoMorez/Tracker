@@ -8,6 +8,7 @@ import {MiniProfile} from "./Pages/MiniProfile.tsx";
 import {Gerneral} from "./Pages/General.tsx";
 import {Avatar} from "./Pages/Avatar.tsx";
 import {ProfileBackground} from "./Pages/ProfieBackground.tsx";
+import {PageConfig} from "./Pages/PageConfig.tsx";
 
 
 type pageProps = {
@@ -56,6 +57,15 @@ export function AccountLinksPage({User, onUpdate} : pageProps){
 
     return(
         <AccountLinks User={User} onUpdate={onUpdate}></AccountLinks>
+    )
+
+}
+
+
+export function PageConfigPage({User, onUpdate} : pageProps){
+
+    return(
+        <PageConfig User={User} onUpdate={onUpdate}></PageConfig>
     )
 
 }

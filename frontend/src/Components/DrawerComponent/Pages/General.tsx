@@ -82,10 +82,10 @@ export function Gerneral({User, onUpdate} : pageProps) {
                         onChange={(e) => handleChange("region", e.target.value as Region)}
 
                     >
-                        <MenuItem value={Region.NotDefined}>
+                        <MenuItem value={Region.NOTDEFINED}>
                             Keine Region Angeben
                         </MenuItem>
-                        {Object.values(Region).filter((r) => r !== Region.NotDefined)
+                        {Object.values(Region).filter((r) => r !== Region.NOTDEFINED)
                             .map((region) => (
                                 <MenuItem key={region} value={region}>
                                     {region.charAt(0).toUpperCase() + region.slice(1)}

@@ -1,5 +1,6 @@
 package org.example.backend.model;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 public record UserProfile(
@@ -11,5 +12,6 @@ public record UserProfile(
         String textColorSmall,
         String backgroundImageSmall,
         Map<String, ServiceData> serviceNames,
-        Map<String, Map<String, String>> pageConfig
+        ArrayList<GameConfig> pageConfig,
+        FavoriteItem favoriteItem
 ) {}

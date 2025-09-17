@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -38,10 +39,12 @@ class ApiControllerTest {
 
     @BeforeEach
     void setUp() {
+        userRepository.deleteAll();
+
         testUser = new User(
                 null,
                 new UserIdentity("testuser", "password", "test@test.com", "USER"),
-                Region.NotDefined,
+                Region.NOTDEFINED,
                 new UserProfile(
                         "shownTest",
                         "avatar.jpg",
@@ -50,8 +53,9 @@ class ApiControllerTest {
                         "bg.jpg",
                         "white",
                         "bgSmall.jpg",
-                        Map.of("service1", new ServiceData("https://service1.com", true, 0)),
-                        Map.of()
+                        Map.of("service1", new ServiceData("https://service1.com", true, 0, null, null, null)),
+                        new ArrayList<>(),
+                        null
                 )
         );
         testUser = userRepository.save(testUser);
@@ -73,7 +77,8 @@ class ApiControllerTest {
                         "white",
                         "bgSmall.png",
                         Map.of(),
-                        Map.of()
+                        new ArrayList<>(),
+                        null
                 )
         );
 
@@ -87,8 +92,36 @@ class ApiControllerTest {
     }
 
     @Test
+    void createUser_shouldReturnConflict_whenUsernameExists() throws Exception {
+        User duplicateUser = new User(
+                null,
+                new UserIdentity("testuser", "anotherPass", "another@test.com", "USER"),
+                Region.USA,
+                new UserProfile(
+                        "shownDuplicate",
+                        "avatar.png",
+                        "bio",
+                        "black",
+                        "bg.png",
+                        "white",
+                        "bgSmall.png",
+                        Map.of(),
+                        new ArrayList<>(),
+                        null
+                )
+        );
+
+        mockMvc.perform(post("/api/users")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(duplicateUser)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void getAllUsers_shouldReturnList() throws Exception {
-        mockMvc.perform(get("/api/users").header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].identity.username").value("testuser"));
     }
@@ -97,9 +130,17 @@ class ApiControllerTest {
     void getUserById_shouldReturnUser() throws Exception {
         String id = testUser.id();
 
-        mockMvc.perform(get("/api/users/" + id).header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/api/users/" + id)
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.identity.username").value("testuser"));
+    }
+
+    @Test
+    void getUserById_shouldReturnNotFound() throws Exception {
+        mockMvc.perform(get("/api/users/nonexistentId")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -118,12 +159,14 @@ class ApiControllerTest {
                         "bgUpdated.jpg",
                         "yellow",
                         "bgSmallUpdated.jpg",
-                        Map.of("spotify", new ServiceData("https://spotify.com/me", true, 0)),
-                        Map.of()
+                        Map.of("spotify", new ServiceData("https://spotify.com/me", true, 0, null, null, null)),
+                        new ArrayList<>(),
+                        null
                 )
         );
 
-        mockMvc.perform(put("/api/users/" + id).header("Authorization", "Bearer " + token)
+        mockMvc.perform(put("/api/users/" + id)
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updated)))
                 .andExpect(status().isOk())
@@ -131,5 +174,25 @@ class ApiControllerTest {
                 .andExpect(jsonPath("$.identity.email").value("updated@test.com"))
                 .andExpect(jsonPath("$.identity.role").value("ADMIN"))
                 .andExpect(jsonPath("$.userProfile.serviceNames.spotify.url").value("https://spotify.com/me"));
+    }
+
+    @Test
+    void deleteUser_shouldReturnNoContent() throws Exception {
+        String id = testUser.id();
+
+        mockMvc.perform(delete("/api/users/" + id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/users/" + id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteUser_shouldReturnNotFound_whenUserDoesNotExist() throws Exception {
+        mockMvc.perform(delete("/api/users/nonexistentId")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 }
