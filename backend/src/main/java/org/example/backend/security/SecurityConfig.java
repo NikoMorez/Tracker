@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/oauth/steam/**").permitAll()
                         .requestMatchers("/api/steam/**").permitAll()
+                        .requestMatchers("/api/news/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
