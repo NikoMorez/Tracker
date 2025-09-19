@@ -32,7 +32,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/auth")
                 || path.startsWith("/api/users")
                 || path.startsWith("/api/oauth/steam")
-                || path.startsWith("/api/steam/")) {
+                || path.startsWith("/api/steam/")
+                || path.startsWith("/api/news/")) {
 
             filterChain.doFilter(request, response);
             return;
